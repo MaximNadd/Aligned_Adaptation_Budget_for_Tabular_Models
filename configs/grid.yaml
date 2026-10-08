@@ -1,0 +1,42 @@
+# configs/grid.yaml
+
+runtime:
+  # The directory where Phase 1 will save the .npz files and registry.json
+  # and where Phase 2 will save the subsample_registry.json
+  data_dir: "data/prepared"
+
+# Phase 1: Dataset Preparation
+datasets:
+  # TableShift datasets (must match the names available in the tableshift package)
+  tableshift:
+    - "brfss_diabetes"
+    - "acsfoodstamps"
+  
+  # WhyShift datasets (these keys MUST exactly match the keys in ACS_TASKS in data_prep.py)
+  whyshift:
+    - "acs_income_ca2sd"
+    - "acs_income_ca2pr"
+    - "acs_pubcov_ca2sd"
+    - "acs_mobility_ca2sd"
+  
+  # OpenML CC18 datasets (format: "openml_<data_id>")
+  openml_cc18:
+    - "openml_3"    # Covertype
+    - "openml_31"   # Credit-g
+    - "openml_37"   # Diabetes
+
+# Phase 2: Subsample Generation
+# These define the "volume levels" (N rows) and random seeds to test.
+volume_levels:
+  - 10000
+  - 30000
+  - 100000
+  - 300000
+  - "full"   # Quotes are optional, but good practice for strings
+
+seeds:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4

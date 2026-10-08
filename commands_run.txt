@@ -1,0 +1,12 @@
+# Clean any previous runs
+rm -rf data/prepared_smoke
+
+# Run Phase 1
+python3 data_prep/data_prep.py --synthetic --data-dir data/prepared_smoke
+
+# Run Phase 2
+python3 data_prep/subsample_prep.py --synthetic --data-dir data/prepared_smoke
+
+
+
+
