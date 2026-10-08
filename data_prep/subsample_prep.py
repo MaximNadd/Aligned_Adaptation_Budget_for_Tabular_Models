@@ -37,8 +37,8 @@ def generate_subsamples(data_dir: Path, config: dict):
     datasets = phase1_registry.get("datasets", {})
     
     # Configuration for Phase 2
-    volume_levels = config.get("volume_levels", [100, 500, 1000, 5000]) # Example
-    seeds = config.get("seeds", [0, 1, 2, 3, 4]) # Example
+    volume_levels = config.get("volume_levels") # Example
+    seeds = config.get("seeds") # Example
     
     subsample_registry = {}
     
