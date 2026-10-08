@@ -122,28 +122,54 @@ def _split_train_val(X, y, val_ratio=0.2, seed=42):
             train_idx, val_idx, train_digest, val_digest)
 
 # --------------------------------------------------------------------------- #
-def prep_synthetic(data_dir: Path):
-    """Two tiny fake datasets (one with an OOD split) for the smoke chain."""
+def prep_synthetic(data_dir: Path, max_volume: int = 500,
+                   n_features: int = 8, headroom: float = 2.0):
+    """Synthetic datasets sized to accommodate the real volume grid.
+
+    `max_volume` is the largest integer volume in the config (e.g. 300000).
+    We need n_train >= max_volume after the 20% val split, and we want
+    "full" to be *meaningfully* larger than max_volume so the two are
+    distinct experiments — hence `headroom`.
+    """
+    # 80% of the pool becomes X_train after the val split.
+    # Multiply by `headroom` so "full" > max_volume by a visible margin.
+    n_train_pool = int(max_volume / 0.8 * headroom)
+    n_test_id    = max(200, int(0.05 * n_train_pool))
+    n_test_ood   = max(200, int(0.05 * n_train_pool))
+    n_total      = n_train_pool + n_test_id + n_test_ood
+
+    print(f"[prep] synthetic: n_total={n_total:,} "
+          f"(train_pool={n_train_pool:,}, id={n_test_id:,}, ood={n_test_ood:,})",
+          flush=True)
+
     rng = np.random.default_rng(0)
     reg = {}
     for key, suite, ood in [("synth_shift", "tableshift", True),
                             ("synth_iid", "openml_cc18", False)]:
-        n, d = 600, 8
-        X = rng.normal(size=(n, d)).astype(np.float32)
-        y = (X[:, 0] + 0.5 * X[:, 1] + rng.normal(0, .5, n) > 0).astype(np.int64)
-        
-        # Phase 1: Split off fixed validation
-        Xtr, ytr, Xval, yval, train_idx, val_idx, train_digest, val_digest = _split_train_val(X, y)
-        Xid, yid = X[500:550], y[500:550] # adjust sizes as needed
-        
+        X = rng.normal(size=(n_total, n_features)).astype(np.float32)
+        y = (X[:, 0] + 0.5 * X[:, 1] +
+             rng.normal(0, .5, n_total) > 0).astype(np.int64)
+
+        # Phase 1: split the pool into fixed train / fixed val
+        (Xtr, ytr, Xval, yval,
+         train_idx, val_idx, train_digest, val_digest) = \
+            _split_train_val(X[:n_train_pool], y[:n_train_pool])
+
+        # ID test: rows immediately after the train pool
+        id_end = n_train_pool + n_test_id
+        Xid, yid = X[n_train_pool:id_end], y[n_train_pool:id_end]
+
+        # OOD test: remaining rows, shifted to create a distribution gap
         Xood = yood = None
         if ood:
-            Xood = X[550:] + rng.normal(1.0, 0.5, size=X[550:].shape).astype(np.float32)
-            yood = y[550:]
-            
-        reg[key] = _save(data_dir, key, suite, "synthetic", 
+            Xood = (X[id_end:] +
+                    rng.normal(1.0, 0.5, size=X[id_end:].shape)
+                    ).astype(np.float32)
+            yood = y[id_end:]
+
+        reg[key] = _save(data_dir, key, suite, "synthetic",
                          Xtr, ytr, Xid, yid, Xval, yval,
-                        train_idx, val_idx, train_digest, val_digest,
+                         train_idx, val_idx, train_digest, val_digest,
                          Xood, yood, note="smoke-only")
     return reg
 
@@ -197,10 +223,10 @@ def prep_tableshift(data_dir: Path, names, cache_dir: Path):
             Xood, yood = _standardise(Xood, yood)
             
             # Phase 1: Split off fixed validation
-            Xtr, ytr, Xval, yval, val_idx, val_digest = _split_train_val(Xtr_full, ytr_full)
+            Xtr, ytr, Xval, yval, train_idx, val_idx, train_digest, val_digest = _split_train_val(Xtr_full, ytr_full)
             
             reg[key] = _save(data_dir, key, "tableshift", f"tableshift:{name}",
-                             Xtr, ytr, Xid, yid, Xval, yval, val_idx, val_digest,
+                             Xtr, ytr, Xval, yval, train_idx, val_idx, train_digest, val_digest,
                              Xood, yood)
             print(f"[prep] {key} ok", flush=True)
         except Exception as e:
@@ -296,10 +322,10 @@ def prep_whyshift(data_dir: Path, keys, cache_dir: Path):
             Xid, yid = Xs[te_idx], ys[te_idx]
             
             # Phase 1: Split off fixed validation
-            Xtr, ytr, Xval, yval, val_idx, val_digest = _split_train_val(Xtr_full, ytr_full)
+            Xtr, ytr, Xval, yval, train_idx, val_idx, train_digest, val_digest = _split_train_val(Xtr_full, ytr_full)
             
             reg[key] = _save(data_dir, key, "whyshift", f"folktables:{task_name}",
-                             Xtr, ytr, Xid, yid, Xval, yval, val_idx, val_digest,
+                             Xtr, ytr, Xval, yval, train_idx, val_idx, train_digest, val_digest,
                              Xt, yt, note=f"{st_src}->{st_tgt}, ACS 2018 1-Year")
             print(f"[prep] {key} ok", flush=True)
         except Exception as e:
@@ -348,8 +374,12 @@ def main():
     data_dir.mkdir(parents=True, exist_ok=True)
     cache_dir = Path(a.cache_dir); cache_dir.mkdir(parents=True, exist_ok=True)
 
+    vols = cfg.get("synthetic_volume_levels", cfg.get("volume_levels", []))
+    int_vols = [v for v in vols if isinstance(v, int)]
+    max_volume = max(int_vols)
+
     if a.synthetic:
-        registry = prep_synthetic(data_dir)
+        registry = prep_synthetic(data_dir, max_volume=max_volume)
     else:
         d = cfg["datasets"]
         registry = {}

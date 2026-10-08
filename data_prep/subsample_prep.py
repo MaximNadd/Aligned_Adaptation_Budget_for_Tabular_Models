@@ -118,20 +118,21 @@ def main():
     a = ap.parse_args()
 
     import yaml
+    cfg = yaml.safe_load(Path(a.config).read_text())
+
     if a.synthetic:
         data_dir = Path(a.data_dir or "data/prepared_smoke")
-        # Hardcoded synthetic config for Phase 2
+        # Use the synthetic-specific grid if provided; otherwise fall back
         cfg = {
-            "volume_levels": [50, 100, 200],
-            "seeds": [0, 1]
+            "volume_levels": cfg.get("synthetic_volume_levels"),
+            "seeds": cfg.get("seeds"),
         }
     else:
-        cfg = yaml.safe_load(Path(a.config).read_text())
         data_dir = Path(a.data_dir or cfg["runtime"]["data_dir"])
-    
+
     if not data_dir.exists():
         sys.exit(f"[subsample] Data dir {data_dir} does not exist.")
-        
+
     generate_subsamples(data_dir, cfg)
 
 if __name__ == "__main__":
