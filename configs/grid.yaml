@@ -34,6 +34,12 @@ volume_levels:
   - 300000
   - "full"   # Quotes are optional, but good practice for strings
 
+boosting_budgets:
+  - 5
+  - 10
+  - 15
+  - 30
+
 # Synthetic smoke-test grid 
 synthetic_volume_levels:
   - 10000
