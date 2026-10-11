@@ -226,8 +226,7 @@ def prep_tableshift(data_dir: Path, names, cache_dir: Path):
             Xtr, ytr, Xval, yval, train_idx, val_idx, train_digest, val_digest = _split_train_val(Xtr_full, ytr_full)
             
             reg[key] = _save(data_dir, key, "tableshift", f"tableshift:{name}",
-                             Xtr, ytr, Xval, yval, train_idx, val_idx, train_digest, val_digest,
-                             Xood, yood)
+                             Xtr, ytr, Xid, yid, Xval, yval, train_idx, val_idx, train_digest, val_digest, Xood, yood)
             print(f"[prep] {key} ok", flush=True)
         except Exception as e:
             _drop(reg, key, e)
@@ -325,8 +324,7 @@ def prep_whyshift(data_dir: Path, keys, cache_dir: Path):
             Xtr, ytr, Xval, yval, train_idx, val_idx, train_digest, val_digest = _split_train_val(Xtr_full, ytr_full)
             
             reg[key] = _save(data_dir, key, "whyshift", f"folktables:{task_name}",
-                             Xtr, ytr, Xval, yval, train_idx, val_idx, train_digest, val_digest,
-                             Xt, yt, note=f"{st_src}->{st_tgt}, ACS 2018 1-Year")
+                            Xtr, ytr, Xid, yid, Xval, yval, train_idx, val_idx, train_digest, val_digest, note=f"{st_src}->{st_tgt}, ACS 2018 1-Year")
             print(f"[prep] {key} ok", flush=True)
         except Exception as e:
             _drop(reg, key, e)
@@ -350,10 +348,10 @@ def prep_cc18(data_dir: Path, keys, cache_dir: Path):
                 X, y, test_size=0.3, random_state=42, stratify=y)
             
             # Phase 1: Split off fixed validation from train+val
-            Xtr, ytr, Xval, yval, val_idx, val_digest = _split_train_val(X_tv, y_tv)
+            Xtr, ytr, Xval, yval, train_idx, val_idx, train_digest, val_digest = _split_train_val(X_tv, y_tv)
             
             reg[key] = _save(data_dir, key, "openml_cc18", f"openml:{did}",
-                             Xtr, ytr, Xid, yid, Xval, yval, val_idx, val_digest)
+                             Xtr, ytr, Xid, yid, Xval, yval,train_idx, val_idx, train_digest, val_digest)
             print(f"[prep] {key} ok ({bunch.details.get('name', '')})", flush=True)
         except Exception as e:
             _drop(reg, key, e)
