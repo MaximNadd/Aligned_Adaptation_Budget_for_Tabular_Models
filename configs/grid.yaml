@@ -7,23 +7,11 @@ runtime:
 
 # Phase 1: Dataset Preparation
 datasets:
-  # TableShift datasets (must match the names available in the tableshift package)
-  tableshift:
-    - "brfss_diabetes"
-    - "acsfoodstamps"
-  
-  # WhyShift datasets (these keys MUST exactly match the keys in ACS_TASKS in data_prep.py)
-  whyshift:
-    - "acs_income_ca2sd"
-    - "acs_income_ca2pr"
-    - "acs_pubcov_ca2sd"
-    - "acs_mobility_ca2sd"
-  
   # OpenML CC18 datasets (format: "openml_<data_id>")
   openml_cc18:
-    - "openml_3"    # Covertype
-    - "openml_31"   # Credit-g
-    - "openml_37"   # Diabetes
+    - "openml_3"    # Covertype (581k)
+    - "openml_1169"  # Airlines (539k)
+    - "openml_1180"  # BNG (Adult) (~1M)
 
 # Phase 2: Subsample Generation
 # These define the "volume levels" (N rows) and random seeds to test.

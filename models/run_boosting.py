@@ -4,8 +4,7 @@ Phase 3: Boosting Branch.
 For each (dataset, volume, seed, model):
   1. Fit with DEFAULT hyperparameters. Record metrics + costs.
   2. Run random search for max(budgets) trials. Track best-so-far on val.
-  3. At each checkpoint (5, 10, 15, 30), evaluate the current best-so-far
-     model on ID and OOD test sets. Emit one row per checkpoint.
+  3. At each checkpoint (5, 10, 15, 30), evaluate the current best-so-far. Emit one row per checkpoint.
   4. Append rows to a parquet file for resume.
 
 Usage:
@@ -178,7 +177,7 @@ def make_evaluator(y_train):
 def run_one_experiment(
     model_name, dataset_key, volume, seed,
     X_train_full, y_train_full, local_idx,
-    X_val, y_val, X_id, y_id, X_ood, y_ood,
+    X_val, y_val,
     budgets, max_budget,
 ):
     """Run one (model, dataset, volume, seed) experiment. Returns list of rows."""
@@ -205,18 +204,12 @@ def run_one_experiment(
     fit_s = time.time() - t0
 
     val_auc, val_ll = evaluate(model, X_val, y_val)
-    id_auc,  id_ll  = evaluate(model, X_id,  y_id)
-    if X_ood is not None:
-        ood_auc, ood_ll = evaluate(model, X_ood, y_ood)
-    else:
-        ood_auc, ood_ll = float("nan"), float("nan")
+
 
     rows.append({
         **common,
         "phase": "default", "budget": 0,
         "val_auc": val_auc, "val_logloss": val_ll,
-        "id_auc":  id_auc,  "id_logloss":  id_ll,
-        "ood_auc": ood_auc, "ood_logloss": ood_ll,
         "fit_time_s": fit_s,
         "config_json": json.dumps(DEFAULT_PARAMS[model_name], sort_keys=True),
     })
@@ -251,22 +244,11 @@ def run_one_experiment(
             best_val_auc = val_auc
             best_val_ll  = val_ll
             best_config  = config
-            best_model   = model
-
-        # If we hit a checkpoint, emit a row for the current best-so-far
-        if trial in budgets:
-            id_auc,  id_ll  = evaluate(best_model, X_id,  y_id)
-            if X_ood is not None:
-                ood_auc, ood_ll = evaluate(best_model, X_ood, y_ood)
-            else:
-                ood_auc, ood_ll = float("nan"), float("nan")
 
             rows.append({
                 **common,
                 "phase": "tuned", "budget": int(trial),
                 "val_auc": best_val_auc, "val_logloss": best_val_ll,
-                "id_auc":  id_auc,       "id_logloss":  id_ll,
-                "ood_auc": ood_auc,      "ood_logloss": ood_ll,
                 "fit_time_s": cumulative_time,
                 "config_json": json.dumps(best_config, sort_keys=True),
             })
@@ -341,13 +323,8 @@ def main():
         data = np.load(data_dir / f"{ds_key}.npz")
         X_train_full, y_train_full = data["X_train"], data["y_train"]
         X_val, y_val = data["X_val"], data["y_val"]
-        X_id,  y_id  = data["X_id"],  data["y_id"]
-        X_ood = data["X_ood"] if "X_ood" in data.files else None
-        y_ood = data["y_ood"] if "y_ood" in data.files else None
 
-        print(f"\n[phase3] Dataset: {ds_key} "
-              f"(train={len(y_train_full)}, val={len(y_val)}, "
-              f"id={len(y_id)}, ood={0 if y_ood is None else len(y_ood)})")
+        print(f"\n[phase3] Dataset: {ds_key} " f"(train={len(y_train_full)}, val={len(y_val)}, ")
 
         ds_experiments = [v for v in sub_reg.values() if v["dataset_key"] == ds_key]
 
@@ -366,8 +343,7 @@ def main():
                     rows = run_one_experiment(
                         model_name, ds_key, vol, seed,
                         X_train_full, y_train_full, local_idx,
-                        X_val, y_val, X_id, y_id, X_ood, y_ood,
-                        budgets, max_budget,
+                        X_val, y_val, budgets, max_budget,
                     )
                     existing = pd.concat(
                         [existing, pd.DataFrame(rows)], ignore_index=True,
