@@ -111,7 +111,6 @@ def prep_synthetic(data_dir: Path, max_volume: int = 500, n_features: int = 8, h
 def prep_cc18(data_dir: Path, keys, cache_dir: Path):
     reg = {}
     from sklearn.datasets import fetch_openml
-    from sklearn.model_selection import train_test_split
     
     for key in keys:
         did = int(key.split("_")[1])

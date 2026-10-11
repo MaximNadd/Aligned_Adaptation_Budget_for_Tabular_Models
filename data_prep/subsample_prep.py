@@ -110,8 +110,7 @@ def generate_subsamples(data_dir: Path, config: dict):
     print(f"[subsample] READY_PHASE2 written. Phases 3 and 4 can now run.")
 
 def main():
-    ap = argparse.ArgumentParser(description=__doc__,
-                                 formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--config", default="configs/grid.yaml")
     ap.add_argument("--data-dir", default=None)
     ap.add_argument("--synthetic", action="store_true")
