@@ -219,7 +219,6 @@ def run_one_experiment(
     best_val_auc = -np.inf
     best_val_ll  = float("nan")
     best_config  = None
-    best_model   = None
     cumulative_time = 0.0
     n_completed_trials = 0
 
@@ -353,6 +352,8 @@ def main():
                 except Exception as e:
                     print(f"    FAILED: {type(e).__name__}: {e}")
                     traceback.print_exc(limit=3)
+
+            print("\n")
 
     print(f"\n[phase3] Done. {len(existing)} total rows in {output_path}")
 

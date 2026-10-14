@@ -78,7 +78,7 @@ def _split_train_val(X, y, val_ratio=0.2, seed=42):
     return (X[train_idx], y[train_idx], X[val_idx], y[val_idx], train_idx, val_idx, train_digest, val_digest)
 
 # --------------------------------------------------------------------------- #
-def prep_synthetic(data_dir: Path, max_volume: int = 500, n_features: int = 8, headroom: float = 2.0):
+def prep_synthetic(data_dir: Path, max_volume: int = 500, n_features: int = 8, headroom: float = 1):
     """Synthetic datasets sized to accommodate the real volume grid.
 
     `max_volume` is the largest integer volume in the config (e.g. 300000).
